@@ -3,12 +3,12 @@
   "version": "1.0.0",
   "description": "DDP server extracted from Meteor and converted to TypeScript",
   "main": "dist/ddp/livedata_server.js",
-  "types": "meteor/ddp/livedata_server.js",
+  "types": "meteor/ddp/livedata_server.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "",
+  "author": "Andrei Markeev",
   "license": "MIT",
   "dependencies": {
     "compression": "^1.7.4",
