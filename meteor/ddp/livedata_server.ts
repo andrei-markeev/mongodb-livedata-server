@@ -1,6 +1,6 @@
 import { MethodInvocation } from "./method-invocation";
 import { StreamServer, StreamServerSocket } from "./stream_server";
-import { DDPSession } from "./session";
+import { DDPSession, SessionConnectionHandle } from "./session";
 import { Server } from "http";
 import { parseDDP, stringifyDDP, SUPPORTED_DDP_VERSIONS } from "./utils";
 import { makeRpcSeed } from "./random-stream";
@@ -172,7 +172,7 @@ export class DDPServer {
      * @memberOf Meteor
      * @importFromPackage meteor
      */
-    onConnection(fn) {
+    onConnection(fn: (conn: SessionConnectionHandle) => void) {
         var self = this;
         return self.onConnectionHook.register(fn);
     }

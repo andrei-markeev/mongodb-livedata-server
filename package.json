@@ -1,6 +1,6 @@
 {
   "name": "mongodb-livedata-server",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "MongoDB live data server, extracted from Meteor, Fibers removed and converted to TypeScript",
   "main": "dist/livedata_server.js",
   "types": "livedata_server.ts",
@@ -11,16 +11,13 @@
   "author": "Andrei Markeev",
   "license": "MIT",
   "dependencies": {
+    "@types/node": "^18.11.9",
+    "@types/sockjs": "^0.3.33",
+    "@types/double-ended-queue": "^2.1.1",
     "double-ended-queue": "^2.1.0-0",
     "mongodb": "^4.11.0",
     "permessage-deflate": "^0.1.7",
     "sockjs": "^0.3.24"
-  },
-  "devDependencies": {
-    "@types/connect": "^3.4.35",
-    "@types/double-ended-queue": "^2.1.1",
-    "@types/node": "^18.11.9",
-    "@types/sockjs": "^0.3.33"
   },
   "repository": {
     "type": "git",
