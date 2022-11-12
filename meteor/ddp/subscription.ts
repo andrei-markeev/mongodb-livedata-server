@@ -1,6 +1,7 @@
 // Ctor for a sub handle: the input to each publish function
 
 import { clone } from "../ejson/ejson";
+import { LiveCursor } from "../mongo/live_cursor";
 import { Random } from "../random/main";
 import { DDP, maybeAuditArgumentChecks } from "./livedata_server";
 import { DDPSession, SessionConnectionHandle } from "./session";
@@ -125,7 +126,7 @@ export class Subscription {
             resultOrThenable && typeof resultOrThenable.then === 'function';
         if (isThenable) {
             Promise.resolve(resultOrThenable).then(
-                (...args) => this._publishHandlerResult.bind(self)(...args),
+                (...args) => this._publishHandlerResult.bind(this)(...args),
                 e => this.error(e)
             );
         } else {
@@ -152,7 +153,7 @@ export class Subscription {
         //   };
 
         var self = this;
-        var isCursor = function (c) {
+        var isCursor = function (c: any): c is LiveCursor<any> {
             return c && c._publishCursor;
         };
         if (isCursor(res)) {
@@ -176,7 +177,7 @@ export class Subscription {
             // merge box to allow overlap within a subscription
             var collectionNames = {};
             for (var i = 0; i < res.length; ++i) {
-                var collectionName = res[i]._getCollectionName();
+                var collectionName = res[i].cursorDescription.collectionName;
                 if (collectionNames.hasOwnProperty(collectionName)) {
                     self.error(new Error(
                         "Publish function returned multiple cursors for collection " +

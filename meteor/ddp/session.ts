@@ -352,10 +352,9 @@ export class DDPSession {
                 return true;
             });
 
-            if (self.protocol_handlers.hasOwnProperty(msg.msg)) {
-                console.log("Calling protocol handler for ", msg.msg);
+            if (self.protocol_handlers.hasOwnProperty(msg.msg))
                 await self.protocol_handlers[msg.msg].call(self, msg);
-            } else
+            else
                 self.sendError('Bad request', msg);
 
         }

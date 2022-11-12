@@ -1,10 +1,15 @@
 // A write fence collects a group of writes, and provides a callback
 // when all of the writes are fully committed and propagated (all
+
+import { OplogObserveDriver } from "../mongo/oplog-observe-driver";
+
 // observers have been notified of the write and acknowledged it.)
 export class _WriteFence {
 
+    public fired: boolean;
+    public _oplogObserveDrivers: Record<string, OplogObserveDriver>;
+
     private armed: boolean;
-    private fired: boolean;
     private retired: boolean;
     private outstanding_writes: number;
     private before_fire_callbacks: Function[];

@@ -269,7 +269,6 @@ export class DDPServer {
      *
      * @param name {String} identifier for query
      * @param handler {Function} publish handler
-     * @param options {Object}
      *
      * Server will call handler function on each new subscription,
      * either when receiving DDP sub message for a named subscription, or on
@@ -280,11 +279,6 @@ export class DDPServer {
      * client, instead of a subscription that can be turned on and off
      * with subscribe().
      *
-     * options to contain:
-     *  - (mostly internal) is_auto: true if generated automatically
-     *    from an autopublish hook. this is for cosmetic purposes only
-     *    (it lets us determine whether to print a warning suggesting
-     *    that you turn off autopublish).
      */
 
     /**

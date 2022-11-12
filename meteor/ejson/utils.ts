@@ -14,7 +14,9 @@ export const convertMapToObject = (map) => Array.from(map).reduce((acc, [key, va
   return acc;
 }, {});
 
-export const isArguments = obj => obj != null && hasOwn(obj, 'callee');
+export function isArguments (obj: any): obj is ArrayLike<any> {
+    return obj != null && hasOwn(obj, 'callee');
+}
 
 export const isInfOrNaN =
   obj => Number.isNaN(obj) || obj === Infinity || obj === -Infinity;
@@ -23,9 +25,9 @@ export const checkError = {
   maxStack: (msgError) => new RegExp('Maximum call stack size exceeded', 'g').test(msgError),
 };
 
-export const handleError = (fn) => function() {
+export function handleError<F extends (...args: any[]) => any>(fn: F, ...args: any[]) {
   try {
-    return fn.apply(this, arguments);
+    return fn.apply(this, args) as ReturnType<F>;
   } catch (error) {
     const isMaxStack = checkError.maxStack(error.message);
     if (isMaxStack) {

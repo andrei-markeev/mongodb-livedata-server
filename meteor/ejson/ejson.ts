@@ -382,9 +382,9 @@ export function fromJSONValue(item) {
  * @param {Boolean} options.canonical When `true`, stringifies keys in an
  *                                    object in sorted order.
  */
-export function stringify() {
-    handleError((item, options) => {
-        let serialized;
+export function stringify(val: any, opts?: { canonical?: boolean, indent?: boolean | number | string }) {
+    return handleError((item: any, options: { canonical?: boolean, indent?: boolean | number | string }) => {
+        let serialized: string;
         const json = toJSONValue(item);
         if (options && (options.canonical || options.indent)) {
             serialized = canonicalStringify(json, options);
@@ -392,7 +392,7 @@ export function stringify() {
             serialized = JSON.stringify(json);
         }
         return serialized;
-    });
+    }, val, opts);
 }
 
 /**
@@ -414,7 +414,7 @@ export function parse(item) {
  * @param {Object} x The variable to check.
  * @locus Anywhere
  */
-export function isBinary(obj) {
+export function isBinary(obj): obj is Uint8Array {
     return !!((typeof Uint8Array !== 'undefined' && obj instanceof Uint8Array) ||
         (obj && obj.$Uint8ArrayPolyfill));
 };
@@ -546,7 +546,7 @@ export function equals(a, b, options?) {
  * @locus Anywhere
  * @param {EJSON} val A value to copy.
  */
-export function clone(v) {
+export function clone<T>(v:T): T {
     let ret;
     if (!isObject(v)) {
         return v;
@@ -557,7 +557,7 @@ export function clone(v) {
     }
 
     if (v instanceof Date) {
-        return new Date(v.getTime());
+        return new Date(v.getTime()) as unknown as T;
     }
 
     // RegExps are not really EJSON elements (eg we don't define a serialization
@@ -575,16 +575,16 @@ export function clone(v) {
     }
 
     if (Array.isArray(v)) {
-        return v.map(clone);
+        return v.map(clone) as unknown as T;
     }
 
     if (isArguments(v)) {
-        return Array.from(v).map(clone);
+        return Array.from(v).map(clone) as unknown as T;
     }
 
     // handle general user-defined typed Objects if they have a clone method
-    if (isFunction(v.clone)) {
-        return v.clone();
+    if ("clone" in v && isFunction((v as any).clone)) {
+        return (v as any).clone();
     }
 
     // handle other custom types

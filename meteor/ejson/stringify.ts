@@ -11,7 +11,7 @@ function quote(string) {
     return JSON.stringify(string);
   }
   
-  const str = (key, holder, singleIndent, outerIndent, canonical) => {
+  const str = (key, holder, singleIndent, outerIndent, canonical): string => {
     const value = holder[key];
   
     // What happens next depends on the value's type.

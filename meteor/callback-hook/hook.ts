@@ -5,7 +5,7 @@ export class Hook {
     private callbacks: Record<string, Function>;
     private exceptionHandler: Function;
 
-    constructor(options) {
+    constructor(options?) {
         options = options || {};
         this.nextCallbackId = 0;
         this.callbacks = Object.create(null);
@@ -51,7 +51,7 @@ export class Hook {
     //
     // The iteration is stopped if the iterator function returns a falsy
     // value or throws an exception.
-    each(iterator) {
+    each(iterator: (callback: Function) => boolean) {
         var ids = Object.keys(this.callbacks);
         for (var i = 0; i < ids.length; ++i) {
             var id = ids[i];
