@@ -46,7 +46,7 @@ export class OplogHandle {
     private _tailHandle: { stop: () => void } | null;
     private _crossbar: _Crossbar;
     private _baseOplogSelector: Filter<OplogRecord>;
-    private _catchingUpFutures: { ts: Timestamp, future: any }[];
+    private _catchingUpFutures: { ts: Timestamp, future: { promise: Promise<void>, resolve: () => void } }[];
     private _onSkippedEntriesHook: Hook;
     private _entryQueue: DoubleEndedQueue<any>;
     private _workerActive: boolean;
@@ -391,7 +391,7 @@ export class OplogHandle {
         self._lastProcessedTS = ts;
         while (self._catchingUpFutures.length > 0 && self._catchingUpFutures[0].ts.lessThanOrEqual(self._lastProcessedTS)) {
             var sequencer = self._catchingUpFutures.shift();
-            sequencer.future.return();
+            sequencer.future.resolve();
         }
     }
 
