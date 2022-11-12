@@ -1,9 +1,9 @@
 {
   "name": "mongodb-livedata-server",
-  "version": "0.0.4",
+  "version": "0.0.6",
   "description": "MongoDB live data server, extracted from Meteor, Fibers removed and converted to TypeScript",
   "main": "dist/livedata_server.js",
-  "types": "livedata_server.ts",
+  "types": "dist/livedata_server.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

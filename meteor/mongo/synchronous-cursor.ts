@@ -1,4 +1,4 @@
-import MongoDB from "mongodb";
+import * as MongoDB from "mongodb";
 import { equals } from "../ejson/ejson";
 import { OPLOG_COLLECTION } from "./oplog_tailing";
 import { CursorDescription } from "./live_cursor";

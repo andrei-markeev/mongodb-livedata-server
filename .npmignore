@@ -1,2 +1,5 @@
-example
-public
+/meteor
+/livedata_server.ts
+/example
+node_modules
+tsconfig.json

@@ -1,9 +1,9 @@
 import { Subscription } from "../ddp/subscription";
-import MongoDB, { WithId } from "mongodb";
+import * as MongoDB from "mongodb";
 import { LiveMongoConnection } from "./live_connection";
 import { Random } from "../random/main";
 
-interface CustomFindOptions<T> extends MongoDB.FindOptions<WithId<T>> {
+interface CustomFindOptions<T> extends MongoDB.FindOptions<MongoDB.WithId<T>> {
     pollingThrottleMs?: number;
     pollingIntervalMs?: number;
     transform?: (doc: T) => T;
@@ -12,9 +12,9 @@ interface CustomFindOptions<T> extends MongoDB.FindOptions<WithId<T>> {
 }
 
 export class CursorDescription<T> {
-    public selector: MongoDB.Filter<WithId<T>>;
-    public options: CustomFindOptions<WithId<T>>;
-    constructor(public collectionName: string, selector: MongoDB.Filter<WithId<T>>, options?: CustomFindOptions<WithId<T>>) {
+    public selector: MongoDB.Filter<MongoDB.WithId<T>>;
+    public options: CustomFindOptions<MongoDB.WithId<T>>;
+    constructor(public collectionName: string, selector: MongoDB.Filter<MongoDB.WithId<T>>, options?: CustomFindOptions<MongoDB.WithId<T>>) {
         var self = this;
         self.collectionName = collectionName;
         self.selector = _rewriteSelector(selector);
@@ -25,7 +25,7 @@ export class CursorDescription<T> {
 export class LiveCursor<T> {
     public cursorDescription: CursorDescription<T>;
 
-    constructor (public mongo: LiveMongoConnection, collectionName: string, selector: MongoDB.Filter<WithId<T>>, options: CustomFindOptions<WithId<T>>) {
+    constructor (public mongo: LiveMongoConnection, collectionName: string, selector: MongoDB.Filter<MongoDB.WithId<T>>, options: CustomFindOptions<MongoDB.WithId<T>>) {
         this.cursorDescription = new CursorDescription(collectionName, selector, options);
     }
 
@@ -63,7 +63,7 @@ export class LiveCursor<T> {
 }
 
 
-function _rewriteSelector<T>(selector: MongoDB.Filter<WithId<T>>) {
+function _rewriteSelector<T>(selector: MongoDB.Filter<MongoDB.WithId<T>>) {
     if (Array.isArray(selector)) {
       // This is consistent with the Mongo console itself; if we don't do this
       // check passing an empty array ends up selecting all items
@@ -72,7 +72,7 @@ function _rewriteSelector<T>(selector: MongoDB.Filter<WithId<T>>) {
 
     if (!selector || ('_id' in selector && !selector._id)) {
       // can't match anything
-      return { _id: Random.id() } as MongoDB.Filter<WithId<T>>;
+      return { _id: Random.id() } as MongoDB.Filter<MongoDB.WithId<T>>;
     }
 
     return selector;
