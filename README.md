@@ -12,7 +12,8 @@ Using Meteor locks you into the Meteor ecosystem, which has some problems (mostl
 
 As a most common example, this is how you can use livedata with Express.js:
 
-```ts
+```js
+const { DDPServer, LiveCursor, LiveMongoConnection } = require('livedata-server')
 const express = require('express')
 const app = express()
 const port = 3000
@@ -49,8 +50,8 @@ liveDataServer.publish({
 
 ### Important notes
 
-- The project is in alpha. Use on your own risk.
-- Neither method context nor subscription context, don't have `unblock` method anymore (because this package doesn't use Fibers)
+- The project is in alpha. Use at your own risk.
+- Neither method context nor subscription context have the `unblock` method anymore (because this package doesn't use Fibers)
 - Meteor syntax for MongoDB queries is not supported. Please always use MongoDB Node.js driver syntax. For example, instead of
   ```ts
   const doc = myCollection.findOne(id);
