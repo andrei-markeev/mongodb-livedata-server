@@ -49,7 +49,7 @@ export class Subscription {
     }
 
     constructor (
-        private _session: DDPSession,
+        public _session: DDPSession,
         private _handler: any,
         private _subscriptionId: string,
         private _params: any[] = [],
