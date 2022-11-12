@@ -3,11 +3,9 @@
 const { createServer } = require("http");
 const fs = require("fs");
 const path = require("path");
-
-const { DDPServer } = require("../dist/meteor/ddp/livedata_server");
-const { LiveMongoConnection } = require("../dist/meteor/mongo/live_connection");
-const { LiveCursor } = require("../dist/meteor/mongo/live_cursor");
 const { randomBytes } = require("crypto");
+
+const { DDPServer, LiveMongoConnection, LiveCursor } = require("mongodb-livedata-server");
 
 const server = createServer(httpListener).listen(3000);
 
@@ -40,11 +38,11 @@ liveDataServer.methods({
     }
 })
 
-liveDataServer.publish({
-    "test-collection": async () => {
-        return new LiveCursor(liveMongoConnection, "test-collection", { category: "apples" });
+liveDataServer.publish("test-collection",
+    async () => {
+        return new LiveCursor(liveMongoConnection, "test-collection", { category: "apples" }, {});
     }
-})
+);
 
 function httpListener(request, response) {
     console.log(request.method, request.url);

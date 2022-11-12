@@ -1,0 +1,10 @@
+{
+  "name": "example",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "mongodb-livedata-server": "^0.0.1"
+  }
+}

@@ -1,5 +1,5 @@
-Livedata Server
-===============
+MongoDB Live Data Server
+========================
 
 This project is essentially a MongoDB live data driver (based either on polling or on Oplog tailing) combined with a DDP server, extracted
 out of [Meteor](https://github.com/meteor/meteor), with **Fibers** and **underscore** dependencies removed and code converted to Typescript.
@@ -8,12 +8,18 @@ Live data is one of the root concepts of Meteor. Data is served via WebSockets v
 
 Using Meteor locks you into the Meteor ecosystem, which has some problems (mostly for historical reasons). Using live data as a separate npm package might be preferable in many scenarios. Also, people who are trying to migrate from Meteor, might find this package useful as an intermediate step.
 
+### Installation
+
+```
+npm i mongodb-livedata-server
+```
+
 ### Usage
 
 As a most common example, this is how you can use livedata with Express.js:
 
 ```js
-const { DDPServer, LiveCursor, LiveMongoConnection } = require('livedata-server')
+const { DDPServer, LiveCursor, LiveMongoConnection } = require('mongodb-livedata-server')
 const express = require('express')
 const app = express()
 const port = 3000

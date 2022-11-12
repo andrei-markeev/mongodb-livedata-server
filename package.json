@@ -1,9 +1,9 @@
 {
-  "name": "livedata-server",
-  "version": "1.0.0",
-  "description": "DDP server extracted from Meteor and converted to TypeScript",
-  "main": "dist/ddp/livedata_server.js",
-  "types": "meteor/ddp/livedata_server.ts",
+  "name": "mongodb-livedata-server",
+  "version": "0.0.2",
+  "description": "MongoDB live data server, extracted from Meteor, Fibers removed and converted to TypeScript",
+  "main": "dist/livedata_server.js",
+  "types": "livedata_server.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -11,20 +11,19 @@
   "author": "Andrei Markeev",
   "license": "MIT",
   "dependencies": {
-    "compression": "^1.7.4",
-    "connect": "^3.7.0",
-    "cookie-parser": "^1.4.6",
     "double-ended-queue": "^2.1.0-0",
     "mongodb": "^4.11.0",
     "permessage-deflate": "^0.1.7",
-    "send": "^0.18.0",
-    "sockjs": "^0.3.24",
-    "useragent": "^2.3.0"
+    "sockjs": "^0.3.24"
   },
   "devDependencies": {
     "@types/connect": "^3.4.35",
     "@types/double-ended-queue": "^2.1.1",
     "@types/node": "^18.11.9",
     "@types/sockjs": "^0.3.33"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/andrei-markeev/mongodb-livedata-server.git"
   }
 }
