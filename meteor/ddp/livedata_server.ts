@@ -6,9 +6,10 @@ import { parseDDP, stringifyDDP, SUPPORTED_DDP_VERSIONS } from "./utils";
 import { makeRpcSeed } from "./random-stream";
 import { clone } from "../ejson/ejson";
 import { Hook } from "../callback-hook/hook";
+import { Subscription } from "./subscription";
 
 export const DDP: {
-    _CurrentPublicationInvocation: any,
+    _CurrentPublicationInvocation: Subscription,
     _CurrentMethodInvocation: MethodInvocation
 } = {} as any;
 
@@ -289,7 +290,7 @@ export class DDPServer {
      * @param {String|Object} name If String, name of the record set.  If Object, publications Dictionary of publish functions by name.  If `null`, the set has no name, and the record set is automatically sent to all connected clients.
      * @param {Function} func Function called on the server each time a client subscribes.  Inside the function, `this` is the publish handler object, described below.  If the client passed arguments to `subscribe`, the function is called with the same arguments.
      */
-    publish(name: string | Record<string, Function> | null, handler: Function) {
+    publish(name: string | Record<string, (this: MethodInvocation, ...args: any[]) => Promise<any>> | null, handler?: (this: MethodInvocation, ...args: any[]) => Promise<any>) {
         var self = this;
 
         if (typeof name === "string") {
@@ -328,7 +329,7 @@ export class DDPServer {
      * @memberOf Meteor
      * @importFromPackage meteor
      */
-    methods(methods: Record<string, Function>) {
+    methods(methods: Record<string, (this: MethodInvocation, ...args: any[]) => Promise<any>>) {
         var self = this;
         for (const [name, func] of Object.entries(methods)) {
             if (typeof func !== 'function')
