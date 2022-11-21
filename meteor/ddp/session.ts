@@ -505,6 +505,8 @@ export class DDPSession {
                 self.send(payload);
             }, (exception) => {
                 finish();
+                if (exception && !exception.isClientSafe)
+                    console.error(`Exception while invoking method '${msg.method}'`, exception);
                 payload.error = wrapInternalException(
                     exception,
                     `while invoking method '${msg.method}'`
