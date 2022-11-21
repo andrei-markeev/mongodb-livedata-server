@@ -422,7 +422,7 @@ export function _calculateVersion(clientSupportedVersions, serverSupportedVersio
 
 // "blind" exceptions other than those that were deliberately thrown to signal
 // errors to the client
-export function wrapInternalException(exception, context) {
+export function wrapInternalException(exception: any, context: string) {
     if (!exception) return exception;
 
     // To allow packages to throw errors intended for the client but not have to
