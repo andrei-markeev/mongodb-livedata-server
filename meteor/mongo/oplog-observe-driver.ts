@@ -59,7 +59,7 @@ export class OplogObserveDriver {
     private _multiplexer: ObserveMultiplexer;
     private _safeAppendToBuffer: boolean;
     private _stopped: boolean;
-    private _stopHandles: any[];
+    private _stopHandles: { stop: () => void }[];
     private _matcher: MinimongoMatcher;
     private _projectionFn: any;
     private _sharedProjection: any;
@@ -159,8 +159,8 @@ export class OplogObserveDriver {
             })
         ));
 
-        forEachTrigger(self._cursorDescription, function (trigger) {
-            self._stopHandles.push(/*async*/self._mongoHandle._oplogHandle.onOplogEntry(
+        forEachTrigger(self._cursorDescription, async (trigger) => {
+            self._stopHandles.push(await self._mongoHandle._oplogHandle.onOplogEntry(
                 trigger, function (notification) {
                     //Meteor._noYieldsAllowed(finishIfNeedToPollQuery(function () {
                     var op = notification.op;

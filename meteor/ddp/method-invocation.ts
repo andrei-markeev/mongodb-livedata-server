@@ -1,5 +1,17 @@
 // Instance name is this because it is usually referred to as this inside a
 // method definition
+
+import { SessionConnectionHandle } from "./session";
+
+interface MethodInvocationOptions {
+    isSimulation: boolean;
+    isFromCallAsync?: boolean;
+    userId: string;
+    setUserId: (userId: string) => void;
+    connection: SessionConnectionHandle;
+    randomSeed: number;
+}
+
 /**
  * @summary The state for a single invocation of a method, referenced by this
  * inside a method definition.
@@ -9,7 +21,7 @@
  */
 export class MethodInvocation {
     public userId: string;
-    public connection: any;
+    public connection: SessionConnectionHandle;
 
     private isSimulation: boolean;
     private _isFromCallAsync: boolean;
@@ -17,7 +29,7 @@ export class MethodInvocation {
     private randomSeed: number;
     private randomStream: any;
 
-    constructor(options) {
+    constructor(options: MethodInvocationOptions) {
       // true if we're running not the actual method, but a stub (that is,
       // if we're on a client (which may be a browser, or in the future a
       // server connecting to another server) and presently running a
