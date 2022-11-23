@@ -125,7 +125,7 @@ export class OrderedDict {
     // iter(value, key, index) on each one.
 
     // Stops whenever iter returns OrderedDict.BREAK, or after the last element.
-    forEach(iter, context = null) {
+    forEach(iter: (doc: any, key: string, index: number) => any, context = null) {
         var i = 0;
         var elt = this._first;
         while (elt !== null) {

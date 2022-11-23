@@ -7,11 +7,12 @@
 
 import { DiffSequence } from "../diff-sequence/diff";
 import { clone } from "../ejson/ejson";
+import { IdMap } from "../id-map/id_map";
 import { OrderedDict } from "../ordered-dict/ordered_dict";
 
 // available as `this` to those callbacks.
 export class _CachingChangeObserver {
-    public docs: OrderedDict | Map<string, any>;
+    public docs: OrderedDict | IdMap;
     public applyChange: {
         added?: (id: string, fields: any) => void;
         changed?: (id: string, fields: any) => void;
@@ -76,7 +77,7 @@ export class _CachingChangeObserver {
           },
         };
       } else {
-        this.docs = new Map();
+        this.docs = new IdMap();
         this.applyChange = {
           added: (id, fields) => {
             // Take a shallow copy since the top-level properties can be changed
@@ -88,7 +89,7 @@ export class _CachingChangeObserver {
   
             doc._id = id;
   
-            (this.docs as Map<string, any>).set(id,  doc);
+            (this.docs as IdMap).set(id,  doc);
           },
         };
       }
@@ -114,7 +115,7 @@ export class _CachingChangeObserver {
           callbacks.removed.call(this, id);
         }
   
-        (this.docs as Map<string, any>).delete(id);
+        (this.docs as IdMap).remove(id);
       };
     }
   };

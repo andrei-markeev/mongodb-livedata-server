@@ -3,10 +3,12 @@
 import { clone } from "../ejson/ejson";
 import { LiveCursor } from "../mongo/live_cursor";
 import { Random } from "../random/main";
+import { AsyncFunction } from "../types";
 import { DDP, maybeAuditArgumentChecks } from "./livedata_server";
 import { DDPSession, SessionConnectionHandle } from "./session";
 
-type SubscriptionHandle = `N${string}` | `U${string}`;
+export type SubscriptionHandle = `N${string}` | `U${string}`;
+export type SubscriptionCallbacks = Pick<Subscription, "added" | "changed" | "removed">;
 
 // Instance name is this because it's usually referred to as this inside a
 // publish
@@ -50,7 +52,7 @@ export class Subscription {
 
     constructor (
         public _session: DDPSession,
-        private _handler: any,
+        private _handler: (...args: any[]) => any | AsyncFunction,
         private _subscriptionId: string,
         private _params: any[] = [],
         private _name?: string)
@@ -88,7 +90,7 @@ export class Subscription {
 
     };
 
-    _runHandler() {
+    async _runHandler() {
         // XXX should we unblock() here? Either before running the publish
         // function, or before running _publishCursor.
         //
@@ -125,16 +127,19 @@ export class Subscription {
         const isThenable =
             resultOrThenable && typeof resultOrThenable.then === 'function';
         if (isThenable) {
-            Promise.resolve(resultOrThenable).then(
-                (...args) => this._publishHandlerResult.bind(this)(...args),
-                e => this.error(e)
-            );
+            let result;
+            try {
+                result = await resultOrThenable;
+            } catch(e) {
+                this.error(e);
+            }
+            await this._publishHandlerResult(result);
         } else {
-            this._publishHandlerResult(resultOrThenable);
+            await this._publishHandlerResult(resultOrThenable);
         }
     }
 
-    _publishHandlerResult(res) {
+    async _publishHandlerResult(res) {
         // SPECIAL CASE: Instead of writing their own callbacks that invoke
         // this.added/changed/ready/etc, the user can just return a collection
         // cursor or array of cursors from the publish function; we call their
@@ -158,7 +163,7 @@ export class Subscription {
         };
         if (isCursor(res)) {
             try {
-                res._publishCursor(self);
+                await res._publishCursor(self);
             } catch (e) {
                 self.error(e);
                 return;
@@ -189,7 +194,7 @@ export class Subscription {
 
             try {
                 for (const cur of res) {
-                    cur._publishCursor(self);
+                    await cur._publishCursor(self);
                 }
             } catch (e) {
                 self.error(e);

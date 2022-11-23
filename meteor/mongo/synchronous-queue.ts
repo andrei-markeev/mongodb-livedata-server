@@ -1,6 +1,6 @@
 import DoubleEndedQueue from "double-ended-queue";
+import { AsyncFunction } from "../types";
 
-type AsyncFunction = (...args: any[]) => Promise<any>;
 type TaskHandle = { task: AsyncFunction, name: string, runTaskResolve?: Function, runTaskReject?: Function };
 
 export class _SynchronousQueue {

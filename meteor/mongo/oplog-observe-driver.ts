@@ -701,12 +701,12 @@ export class OplogObserveDriver {
         //});
     }
     // Yields!
-    _runInitialQuery() {
+    async _runInitialQuery() {
         var self = this;
         if (self._stopped)
             throw new Error("oplog stopped surprisingly early");
 
-        self._runQuery({ initial: true });  // yields
+        await self._runQuery({ initial: true });  // yields
 
         if (self._stopped)
             return;  // can happen on queryError
@@ -715,7 +715,7 @@ export class OplogObserveDriver {
         // stop() to be called.)
         self._multiplexer.ready();
 
-        self._doneQuerying();  // yields
+        await self._doneQuerying();  // yields
     }
 
     // In various circumstances, we may just want to stop processing the oplog and

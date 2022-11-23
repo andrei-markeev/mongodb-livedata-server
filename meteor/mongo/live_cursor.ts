@@ -29,8 +29,8 @@ export class LiveCursor<T> {
         this.cursorDescription = new CursorDescription(collectionName, selector, options);
     }
 
-    _publishCursor(sub: Subscription) {
-        const observeHandle = this.mongo._observeChanges(
+    async _publishCursor(sub: Subscription) {
+        const observeHandle = await this.mongo._observeChanges(
             this.cursorDescription,
             false,
             {

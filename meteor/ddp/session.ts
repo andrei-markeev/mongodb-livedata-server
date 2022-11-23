@@ -8,7 +8,8 @@ import { Heartbeat } from "./heartbeat";
 import { stringifyDDP } from "./utils";
 import { DiffSequence } from "../diff-sequence/diff";
 import { SessionCollectionView } from "./session-collection-view";
-import { Subscription } from "./subscription";
+import { Subscription, SubscriptionHandle } from "./subscription";
+import { IdMap } from "../id-map/id_map";
 
 export interface SessionConnectionHandle {
     id: string;
@@ -43,9 +44,9 @@ export class DDPSession {
     private workerRunning: boolean;
     private _namedSubs: Map<string, any>;
     private _universalSubs: any[];
-    private collectionViews: Map<string, any>;
+    private collectionViews: IdMap;
     private _isSending: boolean;
-    private _pendingReady: any[];
+    private _pendingReady: string[];
     private _closeCallbacks: Function[];
     private _respondToPings: boolean;
     private heartbeat: Heartbeat;
@@ -72,7 +73,7 @@ export class DDPSession {
 
         self.userId = null;
 
-        self.collectionViews = new Map();
+        self.collectionViews = new IdMap();
 
         // Set this to false to not send messages when collectionViews are
         // modified. This is done when rerunning subs in _setUserId and those messages
@@ -141,7 +142,7 @@ export class DDPSession {
 
     }
 
-    sendReady(subscriptionIds) {
+    sendReady(subscriptionIds: string[]) {
         var self = this;
         if (self._isSending)
             self.send({ msg: "ready", subs: subscriptionIds });
@@ -189,7 +190,7 @@ export class DDPSession {
         };
     }
 
-    getCollectionView(collectionName) {
+    getCollectionView(collectionName: string) {
         var self = this;
         var ret = self.collectionViews.get(collectionName);
         if (!ret) {
@@ -199,7 +200,7 @@ export class DDPSession {
         return ret;
     }
 
-    added(subscriptionHandle, collectionName, id, fields) {
+    added(subscriptionHandle: SubscriptionHandle, collectionName: string, id: string, fields: Record<string, any>) {
         if (this.server.getPublicationStrategy(collectionName).useCollectionView) {
             const view = this.getCollectionView(collectionName);
             view.added(subscriptionHandle, id, fields);
@@ -208,19 +209,19 @@ export class DDPSession {
         }
     }
 
-    removed(subscriptionHandle, collectionName, id) {
+    removed(subscriptionHandle: SubscriptionHandle, collectionName: string, id: string) {
         if (this.server.getPublicationStrategy(collectionName).useCollectionView) {
             const view = this.getCollectionView(collectionName);
             view.removed(subscriptionHandle, id);
             if (view.isEmpty()) {
-                this.collectionViews.delete(collectionName);
+                this.collectionViews.remove(collectionName);
             }
         } else {
             this.sendRemoved(collectionName, id);
         }
     }
 
-    changed(subscriptionHandle, collectionName, id, fields) {
+    changed(subscriptionHandle: SubscriptionHandle, collectionName: string, id: string, fields: Record<string, any>) {
         if (this.server.getPublicationStrategy(collectionName).useCollectionView) {
             const view = this.getCollectionView(collectionName);
             view.changed(subscriptionHandle, id, fields);
@@ -253,7 +254,7 @@ export class DDPSession {
 
         // Drop the merge box data immediately.
         self.inQueue = null;
-        self.collectionViews = new Map();
+        self.collectionViews = new IdMap();
 
         if (self.heartbeat) {
             self.heartbeat.stop();
@@ -571,7 +572,7 @@ export class DDPSession {
         // update the userId.
         self._isSending = false;
         var beforeCVs = self.collectionViews;
-        self.collectionViews = new Map();
+        self.collectionViews = new IdMap();
         self.userId = userId;
 
         // _setUserId is normally called from a Meteor method with
@@ -608,13 +609,13 @@ export class DDPSession {
         // this diff, so that other changes cannot interleave.
         self._isSending = true;
         self._diffCollectionViews(beforeCVs);
-        if (!self._pendingReady || self._pendingReady.length === 0) {
+        if (self._pendingReady.length > 0) {
             self.sendReady(self._pendingReady);
             self._pendingReady = [];
         }
     }
 
-    _startSubscription(handler, subId?, params?, name?) {
+    async _startSubscription(handler, subId?, params?, name?) {
         var self = this;
 
         var sub = new Subscription(self, handler, subId, params, name);
@@ -624,7 +625,7 @@ export class DDPSession {
         else
             self._universalSubs.push(sub);
 
-        sub._runHandler();
+        await sub._runHandler();
     }
 
     // Tear down specified subscription

@@ -2,18 +2,27 @@ import { clone } from "../ejson/ejson";
 import { _CachingChangeObserver } from "./caching_change_observer";
 import { _SynchronousQueue } from "./synchronous-queue";
 
+export interface ObserveCallbacks {
+    added: (id: string, fields: Record<string, any>) => void;
+    changed: (id: string, fields: Record<string, any>) => void;
+    removed: (id: string) => void;
+    addedBefore?: (id: string, fields: Record<string, any>, before?: any) => void;
+    movedBefore?: (id: string, fields: Record<string, any>, before?: any) => void;
+    _testOnlyPollCallback?: any;
+}
+
 export class ObserveMultiplexer {
     private _ordered: boolean;
     private _onStop: Function;
     private _queue: _SynchronousQueue;
     private _handles: Record<number, ObserveHandle>;
     private _readyFuture: { promise?: Promise<void>, resolve?: Function, reject?: Function, isResolved: boolean } = { isResolved: false };
-    private _cache: any;
+    private _cache: _CachingChangeObserver;
     private _addHandleTasksScheduledButNotPerformed: number;
 
-    public added: (id: string, fields: Record<string, any>) => void;
-    public changed: (id: string, fields: Record<string, any>) => void;
-    public removed: (id: string) => void;
+    public added: ObserveCallbacks["added"];
+    public changed: ObserveCallbacks["changed"];
+    public removed: ObserveCallbacks["removed"];
 
     constructor(options) {
         var self = this;
@@ -36,8 +45,8 @@ export class ObserveMultiplexer {
         self._addHandleTasksScheduledButNotPerformed = 0;
 
         for (const callbackName of self.callbackNames()) {
-            self[callbackName] = function (/* ... */) {
-                self._applyCallback(callbackName, Array.from(arguments));
+            self[callbackName] = async function (/* ... */) {
+                await self._applyCallback(callbackName, Array.from(arguments));
             };
         }
     }
@@ -55,7 +64,7 @@ export class ObserveMultiplexer {
 
         await self._queue.runTask(async () => {
             self._handles[handle._id] = handle;
-            // Send out whatever adds we have so far (whether or not we the
+            // Send out whatever adds we have so far (whether or not the
             // multiplexer is ready).
             self._sendAdds(handle);
             --self._addHandleTasksScheduledButNotPerformed;
@@ -86,7 +95,7 @@ export class ObserveMultiplexer {
         }
     }
     _stop(options?) {
-        var self = this;
+        const self = this;
         options = options || {};
 
         // It shouldn't be possible for us to stop when all our handles still
@@ -106,12 +115,11 @@ export class ObserveMultiplexer {
     // Allows all addHandleAndSendInitialAdds calls to return, once all preceding
     // adds have been processed. Does not block.
     ready() {
-        var self = this;
-        self._queue.queueTask(async () => {
-            if (self._ready())
+        this._queue.queueTask(async () => {
+            if (this._ready())
                 throw Error("can't make ObserveMultiplex ready twice!");
-            self._readyFuture.resolve();
-            self._readyFuture.isResolved = true;
+            this._readyFuture.resolve();
+            this._readyFuture.isResolved = true;
         });
     }
 
@@ -152,7 +160,7 @@ export class ObserveMultiplexer {
     _ready() {
         return this._readyFuture.isResolved;
     }
-    _applyCallback(callbackName: string, args) {
+    async _applyCallback(callbackName: string, args) {
         var self = this;
         self._queue.queueTask(async () => {
             // If we stopped in the meantime, do nothing.
@@ -198,7 +206,7 @@ export class ObserveMultiplexer {
         if (!add)
             return;
         // note: docs may be an _IdMap or an OrderedDict
-        self._cache.docs.forEach(function (doc, id) {
+        self._cache.docs.forEach((doc, id) => {
             if (!self._handles.hasOwnProperty(handle._id))
                 throw Error("handle got removed before sending initial adds!");
             const { _id, ...fields } = handle.nonMutatingCallbacks ? doc : clone(doc);
@@ -217,15 +225,15 @@ let nextObserveHandleId = 1;
 export class ObserveHandle {
     
     public _id: number;
-    public _addedBefore: Function;
-    public _movedBefore: Function;
-    public _added: Function;
-    public _changed: Function;
-    public _removed: Function;
+    public _addedBefore: ObserveCallbacks["addedBefore"];
+    public _movedBefore: ObserveCallbacks["movedBefore"];
+    public _added: ObserveCallbacks["added"];
+    public _changed: ObserveCallbacks["changed"];
+    public _removed: ObserveCallbacks["removed"];
     
     private _stopped: boolean;
 
-    constructor(private _multiplexer: ObserveMultiplexer, callbacks: Record<string, Function>, public nonMutatingCallbacks = false) {
+    constructor(private _multiplexer: ObserveMultiplexer, callbacks: ObserveCallbacks, public nonMutatingCallbacks = false) {
         var self = this;
         // The end user is only supposed to call stop().  The other fields are
         // accessible to the multiplexer, though.

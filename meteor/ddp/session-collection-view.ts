@@ -1,16 +1,8 @@
 import { DiffSequence } from "../diff-sequence/diff";
 import { equals } from "../ejson/ejson";
+import { IdMap } from "../id-map/id_map";
 import { SessionDocumentView } from "./session-document-view";
-
-interface SubscriptionCallbacks {
-    added: (collectionName: string, id: string, fields: Record<string, any>) => void;
-    changed: (collectionName: string, id: string, fields: Record<string, any>) => void;
-    removed: (collectionName: string, id: string) => void;
-}
-
-interface SubscriptionHandle {
-
-}
+import { SubscriptionCallbacks, SubscriptionHandle } from "./subscription";
 
 /**
  * Represents a client's view of a single collection
@@ -20,11 +12,11 @@ interface SubscriptionHandle {
  */
 export class SessionCollectionView {
 
-    private documents = new Map();
+    private documents = new IdMap();
     constructor (private collectionName: string, private callbacks: SubscriptionCallbacks) { }
 
     isEmpty() {
-        return this.documents.size === 0;
+        return this.documents.empty();
     }
 
     diff(previous: SessionCollectionView) {
@@ -93,7 +85,7 @@ export class SessionCollectionView {
         self.callbacks.changed(self.collectionName, id, changedResult);
     }
 
-    removed(subscriptionHandle, id: string) {
+    removed(subscriptionHandle: SubscriptionHandle, id: string) {
         var self = this;
         var docView = self.documents.get(id);
         if (!docView) {
@@ -104,7 +96,7 @@ export class SessionCollectionView {
         if (docView.existsIn.size === 0) {
             // it is gone from everyone
             self.callbacks.removed(self.collectionName, id);
-            self.documents.delete(id);
+            self.documents.remove(id);
         } else {
             var changed = {};
             // remove this subscription from every precedence list

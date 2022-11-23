@@ -5,7 +5,7 @@ import { stringify } from "../ejson/ejson";
 import { _createSynchronousCursor } from "./synchronous-cursor";
 import { OplogHandle } from "./oplog_tailing";
 import { DocFetcher } from "./doc_fetcher";
-import { ObserveHandle, ObserveMultiplexer } from "./observe_multiplexer";
+import { ObserveCallbacks, ObserveHandle, ObserveMultiplexer } from "./observe_multiplexer";
 import { PollingObserveDriver } from "./polling_observe_driver";
 import { OplogObserveDriver } from "./oplog-observe-driver";
 import { MinimongoMatcher } from "./minimongo_matcher";
@@ -149,7 +149,7 @@ export class LiveMongoConnection {
         };
     }
 
-    _observeChanges(cursorDescription: CursorDescription<any>, ordered: boolean, callbacks: any, nonMutatingCallbacks: boolean) {
+    async _observeChanges(cursorDescription: CursorDescription<any>, ordered: boolean, callbacks: ObserveCallbacks, nonMutatingCallbacks: boolean) {
         var self = this;
 
         if (cursorDescription.options.tailable) {
@@ -164,7 +164,7 @@ export class LiveMongoConnection {
 
         var observeKey = stringify(Object.assign({ ordered: ordered }, cursorDescription));
 
-        var multiplexer: ObserveMultiplexer, observeDriver;
+        var multiplexer: ObserveMultiplexer, observeDriver: OplogObserveDriver | PollingObserveDriver<any>;
         var firstHandle = false;
 
         // Find a matching ObserveMultiplexer, or create a new one. This next block is
@@ -238,7 +238,7 @@ export class LiveMongoConnection {
         }
 
         // Blocks until the initial adds have been sent.
-        multiplexer.addHandleAndSendInitialAdds(observeHandle);
+        await multiplexer.addHandleAndSendInitialAdds(observeHandle);
 
         return observeHandle;
     }
