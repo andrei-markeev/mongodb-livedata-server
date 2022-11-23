@@ -44,7 +44,7 @@ export class IdMap {
     }
 
     // Iterates over the items in the map. Return `false` to break the loop.
-    forEach(iterator) {
+    forEach(iterator: (doc: any, key: string) => any) {
         // don't use _.each, because we can't break out of it.
         for (let [key, value] of this._map) {
             const breakIfFalse = iterator.call(

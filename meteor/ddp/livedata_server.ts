@@ -452,7 +452,7 @@ export function wrapInternalException(exception: any, context: string) {
 
 // Audit argument checks, if the audit-argument-checks package exists (it is a
 // weak dependency of this package).
-export function maybeAuditArgumentChecks(f: Function, context: any, args: any[] | null, description: string) {
+export function maybeAuditArgumentChecks<T>(f: (...args: any[]) => T, context: any, args: any[] | null, description: string): T {
     args = args || [];
     /*if (Package['audit-argument-checks']) {
         return Match._failIfArgumentsAreNotAllChecked(

@@ -1,15 +1,21 @@
 import { clone, equals } from "../ejson/ejson";
 import { IdMap } from "../id-map/id_map";
 
+interface DiffCallbacks {
+    both: (key: string, left: any, right: any) => void;
+    leftOnly: (key: string, value: any) => void;
+    rightOnly: (key: string, value: any) => void;
+}
+
 interface DiffSequence {
     diffQueryChanges(ordered: boolean, oldResults: any[], newResults: any[], observer, options?): any;
     diffQueryChanges(ordered: boolean, oldResults: IdMap, newResults: IdMap, observer, options?): any;
     diffQueryUnorderedChanges(oldResults, newResults, observer, options?): any;
     diffQueryOrderedChanges(old_results, new_results, observer, options?): any;
-    diffObjects(left, right, callbacks): any;
-    diffMaps(left, right, callbacks): any;
-    makeChangedFields(newDoc, oldDoc): any;
-    applyChanges(doc, changeFields): void;
+    diffObjects(left: Record<string, any>, right: Record<string, any>, callbacks: DiffCallbacks): any;
+    diffMaps(left: IdMap, right: IdMap, callbacks: DiffCallbacks): any;
+    makeChangedFields(newDoc: Record<string, any>, oldDoc: Record<string, any>): any;
+    applyChanges(doc: Record<string, any>, changeFields: Record<string, any>): void;
 }
 
 export const DiffSequence: DiffSequence = {} as any;
