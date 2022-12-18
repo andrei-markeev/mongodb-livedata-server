@@ -70,7 +70,7 @@ export class OplogObserveDriver {
     private _unpublishedBuffer: MinMaxHeap;
     private _published: MaxHeap | IdMap;
     private _needToFetch: Map<any, any>;
-    private _currentlyFetching: any;
+    private _currentlyFetching: Map<any, any>;
     private _fetchGeneration: number;
     private _requeryWhenDoneThisQuery: boolean;
     private _writesToCommitWhenWeReachSteady: any[];
@@ -546,7 +546,7 @@ export class OplogObserveDriver {
                 var thisGeneration = ++self._fetchGeneration;
                 self._needToFetch = new Map();
                 var waiting = 0;
-                var fut = { promise: undefined, resolve: undefined };
+                var fut: { promise: Promise<void>, resolve: Function } = { promise: undefined, resolve: undefined };
                 fut.promise = new Promise(r => fut.resolve = r);
                 // This loop is safe, because _currentlyFetching will not be updated
                 // during this loop (in fact, it is never mutated).
@@ -583,7 +583,7 @@ export class OplogObserveDriver {
                             }
                         }));
                 });
-                await fut.promise();
+                await fut.promise;
                 // Exit now if we've had a _pollQuery call (here or in another fiber).
                 if ((self._phase as PHASE) === PHASE.QUERYING)
                     return;
