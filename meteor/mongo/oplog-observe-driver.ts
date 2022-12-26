@@ -331,7 +331,7 @@ export class OplogObserveDriver {
         var projectedNew = self._projectionFn(newDoc);
         var projectedOld = self._projectionFn(oldDoc);
         var changed = DiffSequence.makeChangedFields(projectedNew, projectedOld);
-        if (Object.keys(changed).length === 0)
+        if (Object.keys(changed).length !== 0)
             self._multiplexer.changed(id, changed);
         //});
     }
