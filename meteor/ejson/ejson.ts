@@ -583,7 +583,7 @@ export function clone<T>(v:T): T {
     }
 
     // handle general user-defined typed Objects if they have a clone method
-    if ("clone" in v && isFunction((v as any).clone)) {
+    if ("clone" in (v as any) && isFunction((v as any).clone)) {
         return (v as any).clone();
     }
 

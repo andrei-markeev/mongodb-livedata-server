@@ -8,7 +8,7 @@ import { CursorDescription } from "./live_cursor";
 
 export const OPLOG_COLLECTION = 'oplog.rs';
 
-var TOO_FAR_BEHIND = process.env.METEOR_OPLOG_TOO_FAR_BEHIND || 2000;
+var TOO_FAR_BEHIND = +process.env.METEOR_OPLOG_TOO_FAR_BEHIND || 2000;
 var TAIL_TIMEOUT = +process.env.METEOR_OPLOG_TAIL_TIMEOUT || 30000;
 
 var showTS = function (ts) {
@@ -400,7 +400,7 @@ export class OplogHandle {
         TOO_FAR_BEHIND = value;
     }
     _resetTooFarBehind() {
-        TOO_FAR_BEHIND = process.env.METEOR_OPLOG_TOO_FAR_BEHIND || 2000;
+        TOO_FAR_BEHIND = +process.env.METEOR_OPLOG_TOO_FAR_BEHIND || 2000;
     }
 
 }

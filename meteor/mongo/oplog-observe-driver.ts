@@ -4,7 +4,7 @@ import MinimongoSorter from "./minimongo_sorter";
 import { forEachTrigger, listenAll } from "./observe_driver_utils";
 import { ObserveMultiplexer } from "./observe_multiplexer";
 import { oplogV2V1Converter } from "./oplog_v2_converter";
-import { CursorDescription, LiveCursor } from "./live_cursor";
+import { CursorDescription } from "./live_cursor";
 import { _WriteFence } from "../ddp/writefence";
 import { DiffSequence } from "../diff-sequence/diff";
 import { MinMaxHeap } from "../binary-heap/min_max_heap";
