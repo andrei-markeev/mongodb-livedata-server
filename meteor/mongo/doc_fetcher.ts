@@ -29,7 +29,7 @@ export class DocFetcher {
         self._callbacksForOp.set(op, callbacks);
 
         try {
-            var doc = await self.db.collection(collectionName).findOne({ _id: id }) || null;
+            var doc = await self.db.collection<{ _id: string }>(collectionName).findOne({ _id: id }) || null;
             // Return doc to all relevant callbacks. Note that this array can
             // continue to grow during callback execution.
             while (callbacks.length > 0) {
