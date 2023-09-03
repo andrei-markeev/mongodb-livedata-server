@@ -56,7 +56,7 @@ export class StreamServer {
             serverOptions.websocket = false;
         } else {
             serverOptions.faye_server_options = {
-                extensions: [deflate.configure({})]
+                extensions: [deflate.configure({ maxWindowBits: 11, memLevel: 4 })]
             };
         }
 

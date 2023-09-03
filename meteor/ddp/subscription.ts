@@ -30,7 +30,7 @@ export class Subscription {
 
     // The set of (collection, documentid) that this subscription has
     // an opinion about.
-    private _documents = new Map();
+    private _documents = new Map<string, Set<string>>();
 
     // Remember if we are ready.
     private _ready = false;

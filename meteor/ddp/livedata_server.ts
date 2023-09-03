@@ -42,10 +42,10 @@ export class DDPServer {
     };
 
     private onConnectionHook: Hook;
-    private onMessageHook: Hook;
+    public onMessageHook: Hook;
 
     private publish_handlers: Record<string, any> = {};
-    private universal_publish_handlers = [];
+    public universal_publish_handlers = [];
     private method_handlers = {};
     private _publicationStrategies = {};
     private sessions = new Map<string, DDPSession>(); // map from id to session

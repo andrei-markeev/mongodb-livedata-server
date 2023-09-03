@@ -31,7 +31,7 @@ interface DDPMessage {
 
 export class DDPSession {
     public id: string;
-    public server: any;
+    public server: DDPServer;
     public inQueue: DoubleEndedQueue<any>;
     public userId: string | null;
     public connectionHandle: SessionConnectionHandle;
@@ -44,7 +44,7 @@ export class DDPSession {
     private workerRunning: boolean;
     private _namedSubs: Map<string, any>;
     private _universalSubs: any[];
-    private collectionViews: IdMap;
+    private collectionViews: IdMap<SessionCollectionView>;
     private _isSending: boolean;
     private _pendingReady: string[];
     private _closeCallbacks: Function[];

@@ -1,7 +1,7 @@
 import * as EJSON from "../ejson/ejson";
 
-export class IdMap {
-    private _map: Map<string, any>;
+export class IdMap<T = any> {
+    private _map: Map<string, T>;
     private _idStringify: (obj: any) => string;
     private _idParse: (str: string) => any;
     constructor(idStringify?: (obj: any) => string, idParse?: (str: string) => any) {
