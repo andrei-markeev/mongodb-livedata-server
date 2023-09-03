@@ -7,6 +7,7 @@ import {
     nothingMatcher,
     _modify,
     _pathsElidingNumericKeys,
+    pathsToTree,
 } from './minimongo_common';
 import { Filter } from 'mongodb';
 import { clone, isBinary } from '../ejson/ejson';
@@ -169,7 +170,7 @@ export class MinimongoMatcher {
         });
     }
 
-    canBecomeTrueByModifier = function (modifier) {
+    canBecomeTrueByModifier(modifier) {
         if (!this.affectedByModifier(modifier)) {
             return false;
         }
@@ -242,6 +243,90 @@ export class MinimongoMatcher {
         return this.documentMatches(matchingDocument).result;
     }
 
+    matchingDocument() {
+        // check if it was computed before
+        if (this._matchingDocument !== undefined) {
+          return this._matchingDocument;
+        }
+
+        // If the analysis of this selector is too hard for our implementation
+        // fallback to "YES"
+        let fallback = false;
+
+        this._matchingDocument = pathsToTree(
+          this._getPaths(),
+          path => {
+            const valueSelector = this._selector[path];
+
+            if (isOperatorObject(valueSelector)) {
+              // if there is a strict equality, there is a good
+              // chance we can use one of those as "matching"
+              // dummy value
+              if (valueSelector.$eq) {
+                return valueSelector.$eq;
+              }
+      
+              if (valueSelector.$in) {
+                const matcher = new MinimongoMatcher({placeholder: valueSelector});
+      
+                // Return anything from $in that matches the whole selector for this
+                // path. If nothing matches, returns `undefined` as nothing can make
+                // this selector into `true`.
+                return valueSelector.$in.find(placeholder =>
+                  matcher.documentMatches({placeholder}).result
+                );
+              }
+
+              if (onlyContainsKeys(valueSelector, ['$gt', '$gte', '$lt', '$lte'])) {
+                let lowerBound = -Infinity;
+                let upperBound = Infinity;
+
+                ['$lte', '$lt'].forEach(op => {
+                  if (hasOwn.call(valueSelector, op) &&
+                      valueSelector[op] < upperBound) {
+                    upperBound = valueSelector[op];
+                  }
+                });
+
+                ['$gte', '$gt'].forEach(op => {
+                  if (hasOwn.call(valueSelector, op) &&
+                      valueSelector[op] > lowerBound) {
+                    lowerBound = valueSelector[op];
+                  }
+                });
+
+                const middle = (lowerBound + upperBound) / 2;
+                const matcher = new MinimongoMatcher({placeholder: valueSelector});
+
+                if (!matcher.documentMatches({placeholder: middle}).result &&
+                    (middle === lowerBound || middle === upperBound)) {
+                  fallback = true;
+                }
+
+                return middle;
+              }
+
+              if (onlyContainsKeys(valueSelector, ['$nin', '$ne'])) {
+                // Since this._isSimple makes sure $nin and $ne are not combined with
+                // objects or arrays, we can confidently return an empty object as it
+                // never matches any scalar.
+                return {};
+              }
+
+              fallback = true;
+            }
+
+            return this._selector[path];
+          },
+          x => x);
+
+        if (fallback) {
+          this._matchingDocument = null;
+        }
+
+        return this._matchingDocument;
+    };
+
     // Knows how to combine a mongo selector and a fields projection to a new fields
     // projection taking into account active fields from the passed selector.
     // @returns Object - projection object (same as fields option of mongo cursor)
@@ -272,4 +357,8 @@ export class MinimongoMatcher {
 
 function pathHasNumericKeys(path: string) {
     return path.split('.').some(isNumericKey);
+}
+
+function onlyContainsKeys(obj, keys) {
+    return Object.keys(obj).every(k => keys.includes(k));
 }
