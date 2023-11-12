@@ -2,6 +2,7 @@ import { Subscription } from "../ddp/subscription";
 import * as MongoDB from "mongodb";
 import { LiveMongoConnection } from "./live_connection";
 import { Random } from "../random/main";
+import { OrderedDict } from "../ordered-dict/ordered_dict";
 
 interface CustomFindOptions<T> extends MongoDB.FindOptions<MongoDB.WithId<T>> {
     pollingThrottleMs?: number;
@@ -34,7 +35,10 @@ export class LiveCursor<T> {
             this.cursorDescription,
             false,
             {
-                added: (id: string, fields: Partial<T>) => {
+                initialAdds: (docs: Map<string, T> | OrderedDict) => {
+                    sub.initialAdds(this.cursorDescription.collectionName, docs);
+                },
+                added: (id: string, fields: Omit<T, "_id">) => {
                     sub.added(this.cursorDescription.collectionName, id, fields);
                 },
                 changed: (id: string, fields: Partial<T>) => {

@@ -50,7 +50,7 @@ export class OrderedDict {
         return !this._first;
     }
 
-    size() {
+    get size() {
         return this._size;
     }
 
@@ -98,7 +98,7 @@ export class OrderedDict {
         this.putBefore(key, item, null);
     }
 
-    remove(key) {
+    delete(key) {
         var elt = this._dict[this._k(key)];
         if (typeof elt === "undefined")
             throw new Error("Item " + key + " not present in OrderedDict");

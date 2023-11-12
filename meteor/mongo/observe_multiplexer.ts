@@ -1,4 +1,5 @@
 import { clone } from "../ejson/ejson";
+import { OrderedDict } from "../ordered-dict/ordered_dict";
 import { _CachingChangeObserver } from "./caching_change_observer";
 import { _SynchronousQueue } from "./synchronous-queue";
 
@@ -8,6 +9,7 @@ export interface ObserveCallbacks {
     removed: (id: string) => void;
     addedBefore?: (id: string, fields: Record<string, any>, before?: any) => void;
     movedBefore?: (id: string, fields: Record<string, any>, before?: any) => void;
+    initialAdds: (docs: Map<string, any> | OrderedDict) => void;
     _testOnlyPollCallback?: any;
 }
 
@@ -64,9 +66,8 @@ export class ObserveMultiplexer {
 
         await self._queue.runTask(async () => {
             self._handles[handle._id] = handle;
-            // Send out whatever adds we have so far (whether or not the
-            // multiplexer is ready).
-            self._sendAdds(handle);
+            if (this._ready() && this._cache.docs.size > 0)
+                handle._initialAdds(this._cache.docs);
             --self._addHandleTasksScheduledButNotPerformed;
         });
         // *outside* the task, since otherwise we'd deadlock
@@ -118,6 +119,15 @@ export class ObserveMultiplexer {
         this._queue.queueTask(async () => {
             if (this._ready())
                 throw Error("can't make ObserveMultiplex ready twice!");
+
+            if (this._cache.docs.size > 0) {
+                for (const handleId of Object.keys(this._handles)) {
+                    var handle = this._handles && this._handles[handleId];
+                    if (handle)
+                        handle._initialAdds(this._cache.docs);
+                }
+            }
+
             this._readyFuture.resolve();
             this._readyFuture.isResolved = true;
         });
@@ -153,9 +163,9 @@ export class ObserveMultiplexer {
     callbackNames() {
         var self = this;
         if (self._ordered)
-            return ["addedBefore", "changed", "movedBefore", "removed"];
+            return ["initialAdds", "addedBefore", "changed", "movedBefore", "removed"];
         else
-            return ["added", "changed", "removed"];
+            return ["initialAdds", "added", "changed", "removed"];
     }
     _ready() {
         return this._readyFuture.isResolved;
@@ -177,6 +187,10 @@ export class ObserveMultiplexer {
                 throw new Error("Got " + callbackName + " during initial adds");
             }
 
+            // don't actually send anything to the handles until initial adds are cached
+            if (!self._ready())
+                return;
+
             // Now multiplex the callbacks out to all observe handles. It's OK if
             // these calls yield; since we're inside a task, no other use of our queue
             // can continue until these are done. (But we do have to be careful to not
@@ -194,28 +208,6 @@ export class ObserveMultiplexer {
         });
     }
 
-    // Sends initial adds to a handle. It should only be called from within a task
-    // (the task that is processing the addHandleAndSendInitialAdds call). It
-    // synchronously invokes the handle's added or addedBefore; there's no need to
-    // flush the queue afterwards to ensure that the callbacks get out.
-    _sendAdds(handle: ObserveHandle) {
-        var self = this;
-        //if (self._queue.safeToRunTask())
-        //    throw Error("_sendAdds may only be called from within a task!");
-        var add = self._ordered ? handle._addedBefore : handle._added;
-        if (!add)
-            return;
-        // note: docs may be an _IdMap or an OrderedDict
-        self._cache.docs.forEach((doc, id) => {
-            if (!self._handles.hasOwnProperty(handle._id))
-                throw Error("handle got removed before sending initial adds!");
-            const { _id, ...fields } = handle.nonMutatingCallbacks ? doc : clone(doc);
-            if (self._ordered)
-                add(id, fields, null); // we're going in order, so add at end
-            else
-                add(id, fields);
-        });
-    }
 }
 
 
@@ -223,14 +215,15 @@ let nextObserveHandleId = 1;
 
 // When the callbacks do not mutate the arguments, we can skip a lot of data clones
 export class ObserveHandle {
-    
+
     public _id: number;
+    public _initialAdds: ObserveCallbacks["initialAdds"];
     public _addedBefore: ObserveCallbacks["addedBefore"];
     public _movedBefore: ObserveCallbacks["movedBefore"];
     public _added: ObserveCallbacks["added"];
     public _changed: ObserveCallbacks["changed"];
     public _removed: ObserveCallbacks["removed"];
-    
+
     private _stopped: boolean;
 
     constructor(private _multiplexer: ObserveMultiplexer, callbacks: ObserveCallbacks, public nonMutatingCallbacks = false) {

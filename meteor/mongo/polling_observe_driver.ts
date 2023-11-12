@@ -6,7 +6,6 @@ import { CursorDescription } from "./live_cursor";
 import { DiffSequence } from "../diff-sequence/diff";
 import { _SynchronousQueue } from "./synchronous-queue";
 import { listenAll } from "./observe_driver_utils";
-import { IdMap } from "../id-map/id_map";
 
 var POLLING_THROTTLE_MS = +process.env.METEOR_POLLING_THROTTLE_MS || 50;
 var POLLING_INTERVAL_MS = +process.env.METEOR_POLLING_INTERVAL_MS || 10 * 1000;
@@ -21,7 +20,7 @@ interface PollingObserveDriverOptions<TOrdered extends boolean> {
     sorter?: any;
 }
 
-type ResultsType<TOrdered> = TOrdered extends true ? any[] : IdMap;
+type ResultsType<TOrdered> = TOrdered extends true ? any[] : Map<string, any>;
 
 export class PollingObserveDriver<TOrdered extends boolean> {
     private _cursorDescription: CursorDescription<any>;
@@ -124,7 +123,7 @@ export class PollingObserveDriver<TOrdered extends boolean> {
         if (!oldResults) {
             first = true;
             // XXX maybe use OrderedDict instead?
-            oldResults = self._ordered ? [] : new IdMap();
+            oldResults = self._ordered ? [] : new Map<string, any>();
         }
 
         // Save the list of pending writes which this round will commit.
@@ -135,8 +134,9 @@ export class PollingObserveDriver<TOrdered extends boolean> {
         try {
             const cursor = self._mongoHandle.db.collection(self._cursorDescription.collectionName).find(self._cursorDescription.selector);
             if (!self._ordered) {
-                newResults = new IdMap();
-                await cursor.forEach((doc) => (newResults as IdMap).set(doc._id, doc));
+                newResults = new Map<string, any>();
+                for await (const doc of cursor)
+                    newResults.set(doc._id, doc);
             } else
                 newResults = await cursor.toArray();
         } catch (e) {

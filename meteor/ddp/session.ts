@@ -9,7 +9,7 @@ import { stringifyDDP } from "./utils";
 import { DiffSequence } from "../diff-sequence/diff";
 import { SessionCollectionView } from "./session-collection-view";
 import { Subscription, SubscriptionHandle } from "./subscription";
-import { IdMap } from "../id-map/id_map";
+import { OrderedDict } from "../ordered-dict/ordered_dict";
 
 export interface SessionConnectionHandle {
     id: string;
@@ -44,7 +44,7 @@ export class DDPSession {
     private workerRunning: boolean;
     private _namedSubs: Map<string, any>;
     private _universalSubs: any[];
-    private collectionViews: IdMap<SessionCollectionView>;
+    private collectionViews: Map<string, SessionCollectionView>;
     private _isSending: boolean;
     private _pendingReady: string[];
     private _closeCallbacks: Function[];
@@ -73,7 +73,7 @@ export class DDPSession {
 
         self.userId = null;
 
-        self.collectionViews = new IdMap();
+        self.collectionViews = new Map();
 
         // Set this to false to not send messages when collectionViews are
         // modified. This is done when rerunning subs in _setUserId and those messages
@@ -157,6 +157,13 @@ export class DDPSession {
         return this._isSending || !this.server.getPublicationStrategy(collectionName).useCollectionView;
     }
 
+    sendInitialAdds(collectionName: string, docs: Map<string, any> | OrderedDict) {
+        if (this._canSend(collectionName)) {
+            const items = [];
+            docs.forEach(doc => items.push(doc));
+            this.send({ msg: "init", collection: collectionName, items });
+        }
+    }
 
     sendAdded(collectionName: string, id: string, fields: Record<string, any>) {
         if (this._canSend(collectionName))
@@ -200,6 +207,15 @@ export class DDPSession {
         return ret;
     }
 
+    initialAdds(subscriptionHandle: SubscriptionHandle, collectionName: string, docs: Map<string, any> | OrderedDict) {
+        if (this.server.getPublicationStrategy(collectionName).useCollectionView) {
+            const view = this.getCollectionView(collectionName);
+            docs.forEach((doc, id) => view.added(subscriptionHandle, id, doc));
+        } else {
+            this.sendInitialAdds(collectionName, docs);
+        }
+    }
+
     added(subscriptionHandle: SubscriptionHandle, collectionName: string, id: string, fields: Record<string, any>) {
         if (this.server.getPublicationStrategy(collectionName).useCollectionView) {
             const view = this.getCollectionView(collectionName);
@@ -214,7 +230,7 @@ export class DDPSession {
             const view = this.getCollectionView(collectionName);
             view.removed(subscriptionHandle, id);
             if (view.isEmpty()) {
-                this.collectionViews.remove(collectionName);
+                this.collectionViews.delete(collectionName);
             }
         } else {
             this.sendRemoved(collectionName, id);
@@ -254,7 +270,7 @@ export class DDPSession {
 
         // Drop the merge box data immediately.
         self.inQueue = null;
-        self.collectionViews = new IdMap();
+        self.collectionViews = new Map();
 
         if (self.heartbeat) {
             self.heartbeat.stop();
@@ -572,7 +588,7 @@ export class DDPSession {
         // update the userId.
         self._isSending = false;
         var beforeCVs = self.collectionViews;
-        self.collectionViews = new IdMap();
+        self.collectionViews = new Map();
         self.userId = userId;
 
         // _setUserId is normally called from a Meteor method with

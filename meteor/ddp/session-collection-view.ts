@@ -1,6 +1,5 @@
 import { DiffSequence } from "../diff-sequence/diff";
 import { equals } from "../ejson/ejson";
-import { IdMap } from "../id-map/id_map";
 import { SessionDocumentView } from "./session-document-view";
 import { SubscriptionCallbacks, SubscriptionHandle } from "./subscription";
 
@@ -12,11 +11,11 @@ import { SubscriptionCallbacks, SubscriptionHandle } from "./subscription";
  */
 export class SessionCollectionView {
 
-    private documents = new IdMap();
+    private documents = new Map();
     constructor (private collectionName: string, private callbacks: SubscriptionCallbacks) { }
 
     isEmpty() {
-        return this.documents.empty();
+        return this.documents.size === 0;
     }
 
     diff(previous: SessionCollectionView) {
@@ -96,7 +95,7 @@ export class SessionCollectionView {
         if (docView.existsIn.size === 0) {
             // it is gone from everyone
             self.callbacks.removed(self.collectionName, id);
-            self.documents.remove(id);
+            self.documents.delete(id);
         } else {
             var changed = {};
             // remove this subscription from every precedence list

@@ -6,14 +6,13 @@
 // invoked immediately before the docs field is updated; this object is made
 
 import { DiffSequence } from "../diff-sequence/diff";
-import { clone } from "../ejson/ejson";
-import { IdMap } from "../id-map/id_map";
 import { OrderedDict } from "../ordered-dict/ordered_dict";
 
 // available as `this` to those callbacks.
 export class _CachingChangeObserver {
-    public docs: OrderedDict | IdMap;
+    public docs: OrderedDict | Map<string, any>;
     public applyChange: {
+        initialAdds?: (docs: OrderedDict | Map<string, any>) => void;
         added?: (id: string, fields: any) => void;
         changed?: (id: string, fields: any) => void;
         removed?: (id: string) => void;
@@ -23,26 +22,8 @@ export class _CachingChangeObserver {
 
     private ordered: boolean;
 
-    constructor(options: { callbacks?: any, ordered?: boolean } = {}) {
-      const orderedFromCallbacks = (
-        options.callbacks &&
-        !!(options.callbacks.addedBefore || options.callbacks.movedBefore)
-      );
-  
-      if (options.hasOwnProperty('ordered')) {
-        this.ordered = options.ordered;
-  
-        if (options.callbacks && options.ordered !== orderedFromCallbacks) {
-          throw Error('ordered option doesn\'t match callbacks');
-        }
-      } else if (options.callbacks) {
-        this.ordered = orderedFromCallbacks;
-      } else {
-        throw Error('must provide ordered or callbacks');
-      }
-  
-      const callbacks = options.callbacks || {};
-  
+    constructor(options: { ordered?: boolean } = {}) {
+      this.ordered = options.ordered || false;
       if (this.ordered) {
         this.docs = new OrderedDict();
         this.applyChange = {
@@ -52,15 +33,6 @@ export class _CachingChangeObserver {
   
             doc._id = id;
   
-            if (callbacks.addedBefore) {
-              callbacks.addedBefore.call(this, id, clone(fields), before);
-            }
-  
-            // This line triggers if we provide added with movedBefore.
-            if (callbacks.added) {
-              callbacks.added.call(this, id, clone(fields));
-            }
-  
             // XXX could `before` be a falsy ID?  Technically
             // idStringify seems to allow for them -- though
             // OrderedDict won't call stringify on a falsy arg.
@@ -69,31 +41,27 @@ export class _CachingChangeObserver {
           movedBefore: (id, before) => {
             const doc = this.docs.get(id);
   
-            if (callbacks.movedBefore) {
-              callbacks.movedBefore.call(this, id, before);
-            }
-  
             (this.docs as OrderedDict).moveBefore(id, before || null);
           },
         };
       } else {
-        this.docs = new IdMap();
+        this.docs = new Map();
         this.applyChange = {
           added: (id, fields) => {
             // Take a shallow copy since the top-level properties can be changed
             const doc = { ...fields };
   
-            if (callbacks.added) {
-              callbacks.added.call(this, id, clone(fields));
-            }
-  
             doc._id = id;
   
-            (this.docs as IdMap).set(id,  doc);
+            (this.docs as Map<string, any>).set(id,  doc);
           },
         };
       }
-  
+
+      this.applyChange.initialAdds = (docs) => {
+        this.docs = docs;
+      };
+
       // The methods in _IdMap and OrderedDict used by these callbacks are
       // identical.
       this.applyChange.changed = (id, fields) => {
@@ -103,19 +71,11 @@ export class _CachingChangeObserver {
           throw new Error(`Unknown id for changed: ${id}`);
         }
   
-        if (callbacks.changed) {
-          callbacks.changed.call(this, id, clone(fields));
-        }
-  
         DiffSequence.applyChanges(doc, fields);
       };
   
       this.applyChange.removed = id => {
-        if (callbacks.removed) {
-          callbacks.removed.call(this, id);
-        }
-  
-        (this.docs as IdMap).remove(id);
+        this.docs.delete(id);
       };
     }
   };

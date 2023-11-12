@@ -2,6 +2,7 @@
 
 import { clone } from "../ejson/ejson";
 import { LiveCursor } from "../mongo/live_cursor";
+import { OrderedDict } from "../ordered-dict/ordered_dict";
 import { Random } from "../random/main";
 import { AsyncFunction } from "../types";
 import { DDP, maybeAuditArgumentChecks } from "./livedata_server";
@@ -310,6 +311,22 @@ export class Subscription {
     _isDeactivated() {
         var self = this;
         return self._deactivated || self._session.inQueue === null;
+    }
+
+    initialAdds(collectionName: string, documents: Map<string, any> | OrderedDict) {
+        if (this._isDeactivated())
+            return;
+
+        if (this._session.server.getPublicationStrategy(collectionName).doAccountingForCollection) {
+            let ids = this._documents.get(collectionName);
+            if (ids == null) {
+                ids = new Set();
+                this._documents.set(collectionName, ids);
+            }
+            documents.forEach((_doc, id) => ids.add(id));
+        }
+
+        this._session.initialAdds(this._subscriptionHandle, collectionName, documents);
     }
 
     /**

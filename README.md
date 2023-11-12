@@ -67,3 +67,4 @@ liveDataServer.publish({
   const doc = await myCollection.findOne({ _id: id });
   ```
 - Neither MongoDB.ObjectId nor it's Meteor.js alternative is supported at the moment. String ids only.
+- Starting from 0.1.0, this library extends DDP with `init` message, which is used to avoid initial spam of `added` messages.

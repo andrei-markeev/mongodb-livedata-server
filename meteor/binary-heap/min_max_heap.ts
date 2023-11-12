@@ -26,9 +26,9 @@ export class MinMaxHeap extends MaxHeap {
         this._minHeap.set(id, value);
     }
 
-    remove(id: string) {
-        super.remove(id);
-        this._minHeap.remove(id);
+    delete(id: string) {
+        super.delete(id);
+        this._minHeap.delete(id);
     }
 
     clear() {

@@ -446,6 +446,7 @@ export function wrapInternalException(exception: any, context: string) {
             return exception.sanitizedError;
     }
 
+    console.error("Error " + context + ":", exception);
     return ddpError(500, "Internal server error");
 };
 

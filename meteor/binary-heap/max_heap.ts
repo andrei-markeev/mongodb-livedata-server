@@ -66,16 +66,16 @@ export class MaxHeap {
     }
 
     _downHeap(idx) {
-        while (leftChildIdx(idx) < this.size()) {
+        while (leftChildIdx(idx) < this.size) {
             const left = leftChildIdx(idx);
             const right = rightChildIdx(idx);
             let largest = idx;
 
-            if (left < this.size()) {
+            if (left < this.size) {
                 largest = this._maxIndex(largest, left);
             }
 
-            if (right < this.size()) {
+            if (right < this.size) {
                 largest = this._maxIndex(largest, right);
             }
 
@@ -149,7 +149,7 @@ export class MaxHeap {
         }
     }
 
-    remove(id) {
+    delete(id) {
         if (this.has(id)) {
             const last = this._heap.length - 1;
             const idx = this._heapIdx.get(id);
@@ -174,7 +174,7 @@ export class MaxHeap {
     }
 
     empty() {
-        return !this.size();
+        return this.size === 0;
     }
 
     clear() {
@@ -187,7 +187,7 @@ export class MaxHeap {
         this._heap.forEach(obj => iterator(obj.value, obj.id));
     }
 
-    size() {
+    get size() {
         return this._heap.length;
     }
 
@@ -206,7 +206,7 @@ export class MaxHeap {
     }
 
     maxElementId() {
-        return this.size() ? this._heap[0].id : null;
+        return this.size > 0 ? this._heap[0].id : null;
     }
 
     _selfCheck() {

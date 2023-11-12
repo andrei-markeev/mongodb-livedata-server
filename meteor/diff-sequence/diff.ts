@@ -1,5 +1,4 @@
 import { clone, equals } from "../ejson/ejson";
-import { IdMap } from "../id-map/id_map";
 
 interface DiffCallbacks {
     both: (key: string, left: any, right: any) => void;
@@ -9,11 +8,11 @@ interface DiffCallbacks {
 
 interface DiffSequence {
     diffQueryChanges(ordered: boolean, oldResults: any[], newResults: any[], observer, options?): any;
-    diffQueryChanges(ordered: boolean, oldResults: IdMap, newResults: IdMap, observer, options?): any;
+    diffQueryChanges(ordered: boolean, oldResults: Map<string, any>, newResults: Map<string, any>, observer, options?): any;
     diffQueryUnorderedChanges(oldResults, newResults, observer, options?): any;
     diffQueryOrderedChanges(old_results, new_results, observer, options?): any;
     diffObjects(left: Record<string, any>, right: Record<string, any>, callbacks: DiffCallbacks): any;
-    diffMaps(left: IdMap, right: IdMap, callbacks: DiffCallbacks): any;
+    diffMaps(left: Map<string, any>, right: Map<string, any>, callbacks: DiffCallbacks): any;
     makeChangedFields(newDoc: Record<string, any>, oldDoc: Record<string, any>): any;
     applyChanges(doc: Record<string, any>, changeFields: Record<string, any>): void;
 }
@@ -42,7 +41,7 @@ DiffSequence.diffQueryChanges = function (ordered: boolean, oldResults: any, new
         DiffSequence.diffQueryUnorderedChanges(oldResults, newResults, observer, options);
 };
 
-DiffSequence.diffQueryUnorderedChanges = function (oldResults: IdMap, newResults: IdMap, observer, options) {
+DiffSequence.diffQueryUnorderedChanges = function (oldResults: Map<string, any>, newResults: Map<string, any>, observer, options) {
     options = options || {};
     var projectionFn = options.projectionFn || clone;
 

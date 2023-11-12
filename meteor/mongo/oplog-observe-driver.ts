@@ -12,7 +12,6 @@ import { MaxHeap } from "../binary-heap/max_heap";
 import { _checkSupportedProjection, _compileProjection, _modify } from "./minimongo_common";
 import { clone, equals, stringify } from "../ejson/ejson";
 import { idForOp, _sleepForMs } from "./oplog_tailing";
-import { IdMap } from "../id-map/id_map";
 import { SynchronousCursor } from "./synchronous-cursor";
 
 enum PHASE {
@@ -68,7 +67,7 @@ export class OplogObserveDriver {
     private _comparator: (a: any, b: any) => number;
     private _sorter: MinimongoSorter;
     private _unpublishedBuffer: MinMaxHeap;
-    private _published: MaxHeap | IdMap;
+    private _published: MaxHeap | Map<string, any>;
     private _needToFetch: Map<any, any>;
     private _currentlyFetching: Map<any, any>;
     private _fetchGeneration: number;
@@ -119,7 +118,7 @@ export class OplogObserveDriver {
             self._comparator = null;
             self._sorter = null;
             self._unpublishedBuffer = null;
-            self._published = new IdMap();
+            self._published = new Map();
         }
 
         // Indicates if it is safe to insert a new document at the end of the buffer
@@ -252,11 +251,11 @@ export class OplogObserveDriver {
         // (exceeding capacity specified by limit). If so, push the maximum
         // element to the buffer, we might want to save it in memory to reduce the
         // amount of Mongo lookups in the future.
-        if (self._limit && self._published.size() > self._limit) {
+        if (self._limit && self._published.size > self._limit) {
             // XXX in theory the size of published is no more than limit+1
-            if (self._published.size() !== self._limit + 1) {
+            if (self._published.size !== self._limit + 1) {
                 throw new Error("After adding to published, " +
-                    (self._published.size() - self._limit) +
+                    (self._published.size - self._limit) +
                     " documents are overflowing the set");
             }
 
@@ -267,7 +266,7 @@ export class OplogObserveDriver {
                 throw new Error("The document just added is overflowing the published set");
             }
 
-            self._published.remove(overflowingDocId);
+            self._published.delete(overflowingDocId);
             self._multiplexer.removed(overflowingDocId);
             self._addBuffered(overflowingDocId, overflowingDoc);
         }
@@ -276,12 +275,12 @@ export class OplogObserveDriver {
     _removePublished(id) {
         var self = this;
         //Meteor._noYieldsAllowed(function () {
-        self._published.remove(id);
+        self._published.delete(id);
         self._multiplexer.removed(id);
-        if (!self._limit || self._published.size() === self._limit)
+        if (!self._limit || self._published.size === self._limit)
             return;
 
-        if (self._published.size() > self._limit)
+        if (self._published.size > self._limit)
             throw Error("self._published got too big");
 
         // OK, we are publishing less than the limit. Maybe we should look in the
@@ -341,10 +340,10 @@ export class OplogObserveDriver {
         self._unpublishedBuffer.set(id, self._sharedProjectionFn(doc));
 
         // If something is overflowing the buffer, we just remove it from cache
-        if (self._unpublishedBuffer.size() > self._limit) {
+        if (self._unpublishedBuffer.size > self._limit) {
             var maxBufferedId = self._unpublishedBuffer.maxElementId();
 
-            self._unpublishedBuffer.remove(maxBufferedId);
+            self._unpublishedBuffer.delete(maxBufferedId);
 
             // Since something matching is removed from cache (both published set and
             // buffer), set flag to false
@@ -357,11 +356,11 @@ export class OplogObserveDriver {
     _removeBuffered(id) {
         var self = this;
         //Meteor._noYieldsAllowed(function () {
-        self._unpublishedBuffer.remove(id);
+        self._unpublishedBuffer.delete(id);
         // To keep the contract "buffer is never empty in STEADY phase unless the
         // everything matching fits into published" true, we poll everything as
         // soon as we see the buffer becoming empty.
-        if (!self._unpublishedBuffer.size() && !self._safeAppendToBuffer)
+        if (!self._unpublishedBuffer.size && !self._safeAppendToBuffer)
             self._needToPollQuery();
         //});
     }
@@ -379,23 +378,23 @@ export class OplogObserveDriver {
 
         var limit = self._limit;
         var comparator = self._comparator;
-        var maxPublished = (limit && self._published.size() > 0)
+        var maxPublished = (limit && self._published.size > 0)
             ? self._published.get((self._published as MaxHeap).maxElementId()) // published is MaxHeap because limit is defined
             : null;
-        var maxBuffered = (limit && self._unpublishedBuffer.size() > 0)
+        var maxBuffered = (limit && self._unpublishedBuffer.size > 0)
             ? self._unpublishedBuffer.get(self._unpublishedBuffer.maxElementId())
             : null;
         // The query is unlimited or didn't publish enough documents yet or the
         // new document would fit into published set pushing the maximum element
         // out, then we need to publish the doc.
-        var toPublish = !limit || self._published.size() < limit ||
+        var toPublish = !limit || self._published.size < limit ||
             comparator(doc, maxPublished) < 0;
 
         // Otherwise we might need to buffer it (only in case of limited query).
         // Buffering is allowed if the buffer is not filled up yet and all
         // matching docs are either in the published set or in the buffer.
         var canAppendToBuffer = !toPublish && self._safeAppendToBuffer &&
-            self._unpublishedBuffer.size() < limit;
+            self._unpublishedBuffer.size < limit;
 
         // Or if it is small enough to be safely inserted to the middle or the
         // beginning of the buffer.
@@ -446,7 +445,7 @@ export class OplogObserveDriver {
         } else if (cachedBefore && matchesNow) {
             var oldDoc = self._published.get(id);
             var comparator = self._comparator;
-            var minBuffered = self._limit && self._unpublishedBuffer.size() &&
+            var minBuffered = self._limit && self._unpublishedBuffer.size &&
                 self._unpublishedBuffer.get(self._unpublishedBuffer.minElementId());
             var maxBuffered;
 
@@ -461,7 +460,7 @@ export class OplogObserveDriver {
                 // published. Notably, we don't want to schedule repoll and continue
                 // relying on this property.
                 var staysInPublished = !self._limit ||
-                    self._unpublishedBuffer.size() === 0 ||
+                    self._unpublishedBuffer.size === 0 ||
                     comparator(newDoc, minBuffered) <= 0;
 
                 if (staysInPublished) {
@@ -489,11 +488,11 @@ export class OplogObserveDriver {
                 // we don't trigger the querying immediately.  if we end this block
                 // with the buffer empty, we will need to trigger the query poll
                 // manually too.
-                self._unpublishedBuffer.remove(id);
+                self._unpublishedBuffer.delete(id);
 
                 // published is MaxHeap because bufferedBefore is only set when limit is defined
                 var maxPublished = self._published.get((self._published as MaxHeap).maxElementId());
-                maxBuffered = self._unpublishedBuffer.size() && self._unpublishedBuffer.get(self._unpublishedBuffer.maxElementId());
+                maxBuffered = self._unpublishedBuffer.size && self._unpublishedBuffer.get(self._unpublishedBuffer.maxElementId());
 
                 // the buffered doc was updated, it could move to published
                 var toPublish = comparator(newDoc, maxPublished) < 0;
@@ -513,7 +512,7 @@ export class OplogObserveDriver {
                     self._safeAppendToBuffer = false;
                     // Normally this check would have been done in _removeBuffered but
                     // we didn't use it, so we need to do it ourself now.
-                    if (!self._unpublishedBuffer.size()) {
+                    if (!self._unpublishedBuffer.size) {
                         self._needToPollQuery();
                     }
                 }
@@ -754,10 +753,10 @@ export class OplogObserveDriver {
     }
 
     // Yields!
-    async _runQuery(options?) {
+    async _runQuery(options?: { initial?: boolean }) {
         var self = this;
         options = options || {};
-        var newResults: IdMap, newBuffer: IdMap;
+        var newResults: Map<string, any>, newBuffer: Map<string, any>;
 
         // This while loop is just to retry failures.
         while (true) {
@@ -765,8 +764,8 @@ export class OplogObserveDriver {
             if (self._stopped)
                 return;
 
-            newResults = new IdMap();
-            newBuffer = new IdMap();
+            newResults = new Map();
+            newBuffer = new Map();
 
             // Query 2x documents as the half excluded from the original query will go
             // into unpublished buffer to reduce additional Mongo lookups in cases
@@ -895,7 +894,7 @@ export class OplogObserveDriver {
     // XXX This is very similar to LocalCollection._diffQueryUnorderedChanges. We
     // should really: (a) Unify IdMap and OrderedDict into Unordered/OrderedDict
     // (b) Rewrite diff.js to use these classes instead of arrays and objects.
-    _publishNewResults(newResults: IdMap, newBuffer: IdMap) {
+    _publishNewResults(newResults: Map<string, any>, newBuffer: Map<string, any>) {
         var self = this;
         //Meteor._noYieldsAllowed(function () {
 
@@ -926,7 +925,7 @@ export class OplogObserveDriver {
         // Sanity-check that everything we tried to put into _published ended up
         // there.
         // XXX if this is slow, remove it later
-        if (self._published.size() !== newResults.size()) {
+        if (self._published.size !== newResults.size) {
             console.error('The Mongo server and the Meteor query disagree on how ' +
                 'many documents match your query. Cursor description: ',
                 self._cursorDescription);
@@ -946,7 +945,7 @@ export class OplogObserveDriver {
             self._addBuffered(id, doc);
         });
 
-        self._safeAppendToBuffer = newBuffer.size() < self._limit;
+        self._safeAppendToBuffer = newBuffer.size < self._limit;
         //});
     }
 
