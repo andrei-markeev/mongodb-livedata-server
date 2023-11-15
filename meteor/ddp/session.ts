@@ -37,12 +37,12 @@ export class DDPSession {
     public connectionHandle: SessionConnectionHandle;
     public _dontStartNewUniversalSubs: boolean;
     public _socketUrl: string;
+    public version: string;
 
-    private version: string;
     private socket: StreamServerSocket;
     private initialized: boolean;
     private workerRunning: boolean;
-    private _namedSubs: Map<string, any>;
+    private _namedSubs: Map<string, Subscription>;
     private _universalSubs: any[];
     private collectionViews: Map<string, SessionCollectionView>;
     private _isSending: boolean;
@@ -646,16 +646,18 @@ export class DDPSession {
 
     // Tear down specified subscription
     _stopSubscription(subId, error?) {
-        var self = this;
-
         var subName = null;
         if (subId) {
-            var maybeSub = self._namedSubs.get(subId);
+            var maybeSub = this._namedSubs.get(subId);
             if (maybeSub) {
                 subName = maybeSub._name;
-                maybeSub._removeAllDocuments();
+
+                // version 1a doesn't send document deletions and relies on the clients for cleanup
+                if (this.version !== "1a")
+                    maybeSub._removeAllDocuments();
+
                 maybeSub._deactivate();
-                self._namedSubs.delete(subId);
+                this._namedSubs.delete(subId);
             }
         }
 
@@ -668,7 +670,7 @@ export class DDPSession {
                     : ("from sub id " + subId));
         }
 
-        self.send(response);
+        this.send(response);
     }
 
     // Tear down all subscriptions. Note that this does NOT send removed or nosub

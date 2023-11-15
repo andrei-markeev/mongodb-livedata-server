@@ -56,7 +56,7 @@ export class Subscription {
         private _handler: (...args: any[]) => any | AsyncFunction,
         private _subscriptionId: string,
         private _params: any[] = [],
-        private _name?: string)
+        public _name?: string)
     {
 
         /**
@@ -326,7 +326,10 @@ export class Subscription {
             documents.forEach((_doc, id) => ids.add(id));
         }
 
-        this._session.initialAdds(this._subscriptionHandle, collectionName, documents);
+        if (this._session.version === "1a")
+            this._session.initialAdds(this._subscriptionHandle, collectionName, documents);
+        else
+            documents.forEach((doc: Record<string, any>, id: string) => this._session.added(this._subscriptionHandle, collectionName, id, doc))
     }
 
     /**

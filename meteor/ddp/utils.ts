@@ -40,7 +40,7 @@ export function last(array, n, guard) {
   return slice.call(array, Math.max(array.length - n, 0));
 }
 
-export const SUPPORTED_DDP_VERSIONS = [ '1', 'pre2', 'pre1' ];
+export const SUPPORTED_DDP_VERSIONS = [ '1a', '1', 'pre2', 'pre1' ];
 
 export function parseDDP(stringMessage: string) {
   try {
