@@ -46,7 +46,7 @@ export function parseDDP(stringMessage: string) {
   try {
     var msg = JSON.parse(stringMessage);
   } catch (e) {
-    console.log("Discarding message with invalid JSON", stringMessage);
+    console.log("Discarding message with invalid JSON", stringMessage, '\r\n' + e.toString());
     return null;
   }
   // DDP messages must be objects.
