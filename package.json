@@ -1,10 +1,11 @@
 {
   "name": "mongodb-livedata-server",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "MongoDB live data server, extracted from Meteor, Fibers removed and converted to TypeScript",
   "main": "dist/livedata_server.js",
   "types": "dist/livedata_server.d.ts",
   "scripts": {
+    "prepack": "tsc",
     "build": "tsc"
   },
   "keywords": [],

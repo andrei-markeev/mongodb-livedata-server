@@ -1971,13 +1971,7 @@ const MODIFIERS = {
                 target[field].push(element);
             });
         } else {
-            const spliceArguments = [position, 0];
-
-            toPush.forEach(element => {
-                spliceArguments.push(element);
-            });
-
-            target[field].splice(...spliceArguments);
+            target[field].splice(position, 0, ...toPush);
         }
 
         // Actually sort.

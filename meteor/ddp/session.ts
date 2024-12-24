@@ -15,8 +15,9 @@ export interface SessionConnectionHandle {
     id: string;
     close: Function;
     onClose: Function;
-    clientAddress: any;
-    httpHeaders: Record<string, any>
+    clientAddress: string | null;
+    httpHeaders: Record<string, any>;
+    sockjsSessionId?: string;
 }
 
 interface DDPMessage {
@@ -115,7 +116,8 @@ export class DDPSession {
                 }
             },
             clientAddress: self._clientAddress(),
-            httpHeaders: self.socket.headers
+            httpHeaders: self.socket.headers,
+            sockjsSessionId: self.socket.pathname.split('/')[3]
         };
 
         self.send({ msg: 'connected', session: self.id });
